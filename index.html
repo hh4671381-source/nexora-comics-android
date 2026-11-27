@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXORA COMICS</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+body{margin:0;background:#101426;color:white;font-family:Arial,sans-serif}
+header{padding:22px;background:#171e35}
+h1{color:#a78bfa}
+main{padding:20px}
+.comic{background:#202a45;padding:18px;border-radius:12px;margin:12px 0}
+button{background:#8b5cf6;color:white;border:0;padding:12px;border-radius:8px}
+</style>
+</head>
+<body>
+<header>
+<h1>NEXORA COMICS</h1>
+<p>Explore Your Manga Universe</p>
+</header>
+
+<main>
+<h2>Daftar Komik</h2>
+<div id="status">Menghubungkan database...</div>
+<div id="comics"></div>
+</main>
+
+<script>
+const SUPABASE_URL = "https://gdcpdjcmoliegaxidioo.supabase.co";
+const SUPABASE_KEY = sb_publishable_0klYKdBWhyCnm7i0NPIwXg_XXKHIxoT
+
+const db = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+
+async function loadComics(){
+  const status = document.getElementById("status");
+  const container = document.getElementById("comics");
+
+  const {data,error} = await db
+    .from("comics")
+    .select("*")
+    .order("created_at",{ascending:false});
+
+  if(error){
+    status.textContent = "Koneksi gagal: " + error.message;
+    return;
+  }
+
+  status.textContent = "Database berhasil terhubung.";
+
+  if(!data.length){
+    container.innerHTML = "<p>Belum ada komik.</p>";
+    return;
+  }
+
+  data.forEach(comic=>{
+    const card=document.createElement("div");
+    card.className="comic";
+    const title=document.createElement("h3");
+    title.textContent=comic.title;
+    const desc=document.createElement("p");
+    desc.textContent=comic.description || "";
+    card.append(title,desc);
+    container.appendChild(card);
+  });
+}
+
+loadComics();
+</script>
+</body>
+  </html>
