@@ -1,3 +1,4 @@
+
 package com.nexora.comics
 
 import android.app.Activity
@@ -5,8 +6,9 @@ import android.os.Bundle
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.webkit.WebChromeClient
-import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceError
 import android.widget.Toast
 
 class MainActivity : Activity() {
@@ -18,24 +20,43 @@ class MainActivity : Activity() {
 
         webView = WebView(this)
 
+        webView.setBackgroundColor(android.graphics.Color.WHITE)
+
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
+            databaseEnabled = true
+            javaScriptCanOpenWindowsAutomatically = true
             cacheMode = WebSettings.LOAD_DEFAULT
-            builtInZoomControls = false
-            displayZoomControls = false
             useWideViewPort = true
             loadWithOverviewMode = true
+            mixedContentMode =
+                WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
         }
 
         webView.webViewClient = object : WebViewClient() {
+
             override fun shouldOverrideUrlLoading(
                 view: WebView?,
                 request: WebResourceRequest?
             ): Boolean {
-                val url = request?.url ?: return true
+                return false
+            }
 
-                return url.host != "comforting-meringue-2fd019.netlify.app"
+            override fun onReceivedError(
+                view: WebView?,
+                request: WebResourceRequest?,
+                error: WebResourceError?
+            ) {
+                super.onReceivedError(view, request, error)
+
+                if (request?.isForMainFrame == true) {
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Gagal memuat halaman. Periksa internet.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
             }
         }
 
@@ -48,6 +69,7 @@ class MainActivity : Activity() {
         )
     }
 
+    @Deprecated("Deprecated in Android")
     override fun onBackPressed() {
         if (webView.canGoBack()) {
             webView.goBack()
@@ -61,4 +83,3 @@ class MainActivity : Activity() {
         super.onDestroy()
     }
 }
-
