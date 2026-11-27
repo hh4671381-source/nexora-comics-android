@@ -1,19 +1,26 @@
-<!DOCTYPE html>
+<!<!DOCTYPE html>
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NEXORA COMICS</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
-body{margin:0;background:#101426;color:white;font-family:Arial,sans-serif}
-header{padding:22px;background:#171e35}
-h1{color:#a78bfa}
-main{padding:20px}
-.comic{background:#202a45;padding:18px;border-radius:12px;margin:12px 0}
-button{background:#8b5cf6;color:white;border:0;padding:12px;border-radius:8px}
+*{box-sizing:border-box}
+body{margin:0;background:#0c1020;color:white;font-family:Arial,sans-serif}
+header{padding:22px;background:#171d35;border-bottom:1px solid #303957}
+h1{color:#a78bfa;margin:0}
+main{max-width:500px;margin:35px auto;padding:20px}
+.card{background:#171d35;padding:22px;border-radius:15px}
+input{width:100%;padding:14px;margin:8px 0;background:#0c1020;border:1px solid #394362;border-radius:8px;color:white}
+button{padding:13px;border:0;border-radius:8px;background:#8b5cf6;color:white;font-weight:bold;margin:6px 3px;cursor:pointer}
+.secondary{background:#303957}
+#message{margin-top:15px;line-height:1.5}
+.hidden{display:none}
 </style>
 </head>
+
 <body>
 <header>
 <h1>NEXORA COMICS</h1>
@@ -21,54 +28,134 @@ button{background:#8b5cf6;color:white;border:0;padding:12px;border-radius:8px}
 </header>
 
 <main>
-<h2>Daftar Komik</h2>
-<div id="status">Menghubungkan database...</div>
-<div id="comics"></div>
+<section class="card" id="authBox">
+<h2>Selamat Datang</h2>
+<p>Masuk atau buat akun NEXORA COMICS.</p>
+
+<input id="email" type="email" placeholder="Alamat email">
+<input id="password" type="password" placeholder="Password">
+
+<button onclick="register()">Daftar</button>
+<button onclick="login()">Login</button>
+
+<div id="message"></div>
+</section>
+
+<section class="card hidden" id="userBox">
+<h2>Berhasil Masuk!</h2>
+<p id="userEmail"></p>
+<p>Selamat datang di NEXORA COMICS.</p>
+<button onclick="logout()">Logout</button>
+</section>
 </main>
 
 <script>
-const SUPABASE_URL = "https://gdcpdjcmoliegaxidioo.supabase.co";
-const SUPABASE_KEY = sb_publishable_0klYKdBWhyCnm7i0NPIwXg_XXKHIxoT
+const SUPABASE_URL =
+"https://gdcpdjcmoliegaxidioo.supabase.co";
+
+const SUPABASE_KEY =
+sb_publishable_0klYKdBWhyCnm7i0NPIwXg_XXKHIxoT
 
 const db = window.supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_KEY
+SUPABASE_URL,
+SUPABASE_KEY
 );
 
-async function loadComics(){
-  const status = document.getElementById("status");
-  const container = document.getElementById("comics");
+const SITE_URL =
+"https://comforting-meringue-2fd019.netlify.app";
 
-  const {data,error} = await db
-    .from("comics")
-    .select("*")
-    .order("created_at",{ascending:false});
-
-  if(error){
-    status.textContent = "Koneksi gagal: " + error.message;
-    return;
-  }
-
-  status.textContent = "Database berhasil terhubung.";
-
-  if(!data.length){
-    container.innerHTML = "<p>Belum ada komik.</p>";
-    return;
-  }
-
-  data.forEach(comic=>{
-    const card=document.createElement("div");
-    card.className="comic";
-    const title=document.createElement("h3");
-    title.textContent=comic.title;
-    const desc=document.createElement("p");
-    desc.textContent=comic.description || "";
-    card.append(title,desc);
-    container.appendChild(card);
-  });
+function message(text){
+document.getElementById("message").textContent=text;
 }
 
-loadComics();
+async function register(){
+const email=document.getElementById("email").value.trim();
+const password=document.getElementById("password").value;
+
+if(!email || !password){
+message("Isi email dan password terlebih dahulu.");
+return;
+}
+
+if(password.length<8){
+message("Password minimal 8 karakter.");
+return;
+}
+
+message("Sedang membuat akun...");
+
+const {data,error}=await db.auth.signUp({
+email,
+password,
+options:{
+emailRedirectTo:SITE_URL
+}
+});
+
+if(error){
+message(error.message);
+return;
+}
+
+if(data.session){
+message("Akun berhasil dibuat dan kamu sudah masuk.");
+}else{
+message("Akun berhasil dibuat. Periksa email untuk verifikasi sebelum login.");
+}
+}
+
+async function login(){
+const email=document.getElementById("email").value.trim();
+const password=document.getElementById("password").value;
+
+if(!email || !password){
+message("Isi email dan password terlebih dahulu.");
+return;
+}
+
+message("Sedang login...");
+
+const {error}=await db.auth.signInWithPassword({
+email,
+password
+});
+
+if(error){
+message(error.message);
+}
+}
+
+async function logout(){
+await db.auth.signOut();
+}
+
+function showUser(user){
+document.getElementById("authBox").classList.add("hidden");
+document.getElementById("userBox").classList.remove("hidden");
+document.getElementById("userEmail").textContent=user.email;
+}
+
+function showAuth(){
+document.getElementById("authBox").classList.remove("hidden");
+document.getElementById("userBox").classList.add("hidden");
+}
+
+db.auth.onAuthStateChange((event,session)=>{
+if(session){
+showUser(session.user);
+}else{
+showAuth();
+}
+});
+
+async function checkSession(){
+const {data}=await db.auth.getSession();
+if(data.session){
+showUser(data.session.user);
+}
+}
+
+checkSession();
 </script>
 </body>
   </html>
